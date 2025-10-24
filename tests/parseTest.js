@@ -1,3 +1,3 @@
 import { parseLogFile } from '../src/services/LogParserService.js'
 
-await parseLogFile('./logs/test.log', 100)
+await parseLogFile('./logs/access.log', 100)
