@@ -9,12 +9,10 @@ const sample = {
     bytes: 1234
 }
 
-// Encode (simulate saving to DB)
 const encoded = encodeLog(sample)
 console.log('--- ENCODED ---')
 console.log(encoded)
 
-// Decode (simulate retrieving from DB)
 const decoded = decodeLog(encoded, (hash) => '/api/test')
 console.log('--- DECODED ---')
 console.log(decoded)
