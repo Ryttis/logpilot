@@ -1,24 +1,52 @@
-import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
+import Alpine from "alpinejs"
+import Chart from "chart.js/auto"
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+window.Alpine = Alpine
 
-setupCounter(document.querySelector('#counter'))
+// Define Alpine component BEFORE Alpine.start()
+Alpine.data("logDashboard", () => ({
+    stats: [],
+    chart: null,
+
+    async loadStats() {
+        try {
+            const res = await fetch("http://localhost:3000/api/logs/stats")
+            const json = await res.json()
+            this.stats = json.data
+            this.renderChart()
+        } catch (err) {
+            console.error("Failed to load stats:", err)
+        }
+
+        // Auto-refresh every 30s
+        setTimeout(() => this.loadStats(), 30000)
+    },
+
+    renderChart() {
+        const ctx = document.getElementById("statsChart").getContext("2d")
+        const labels = this.stats.slice(0, 10).map(r => r.ip)
+        const data = this.stats.slice(0, 10).map(r => r.hits)
+
+        if (this.chart) this.chart.destroy()
+
+        this.chart = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Hits per IP",
+                    data,
+                    backgroundColor: "rgba(59,130,246,0.5)",
+                    borderColor: "rgb(37,99,235)",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        })
+    }
+}))
+
+Alpine.start()

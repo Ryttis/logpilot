@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { parseLogFile } from '../services/LogParserService.js'
 
-const LOG_DIR = path.resolve('./logs')
+const LOG_DIR = process.env.LOG_DIR || './logs'
 const STATE_FILE = path.resolve('./logs/.processed.json')
 
 /**

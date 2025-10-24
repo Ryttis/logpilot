@@ -49,7 +49,17 @@ export async function getLogStats(req, res) {
             limit: 100
         })
 
-        res.json({ count: stats.length, data: stats })
+        const routeMap = await db.RouteMap.findAll()
+        const routeDict = Object.fromEntries(routeMap.map(r => [r.hash, r.route]))
+
+        const readable = stats.map(s => ({
+            ip: s.ip,
+            route: routeDict[s.route_hash] || `[${s.route_hash.slice(0, 6)}…]`,
+            hits: s.dataValues.hits
+        }))
+
+        res.json({ count: readable.length, data: readable })
+
     } catch (err) {
         console.error(err)
         res.status(500).json({ error: 'Failed to fetch stats' })

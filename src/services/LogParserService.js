@@ -1,9 +1,10 @@
 import fs from 'fs'
 import readline from 'readline'
+import crypto from 'crypto'
 import { encodeLog } from './LogEncodingService.js'
 import db from '../../models/index.js'
 
-const { NginxLog } = db
+const { NginxLog, RouteMap } = db
 
 /**
  * --- LogParserService ---
@@ -27,6 +28,13 @@ function parseLine(line) {
 }
 
 /**
+ * Generate SHA1 hash for route string.
+ */
+function hashRoute(route) {
+    return crypto.createHash('sha1').update(route).digest('hex')
+}
+
+/**
  * Stream a file and insert entries in batches.
  * @param {string} filePath
  * @param {number} batchSize
@@ -45,14 +53,31 @@ export async function parseLogFile(filePath, batchSize = 1000) {
 
     for await (const line of rl) {
         const parsed = parseLine(line)
-        if (parsed) {
-            buffer.push(encodeLog(parsed))
-            if (buffer.length >= batchSize) {
-                await NginxLog.bulkCreate(buffer, { ignoreDuplicates: true })
-                buffer.length = 0
-            }
-            lineCount++
+        if (!parsed) continue
+
+        const hash = hashRoute(parsed.route)
+
+        buffer.push({
+            ip: parsed.ip,
+            route_hash: hash,
+            data: encodeLog(parsed),
+            method: parsed.method,
+            status: parsed.status,
+            bytes: parsed.bytes,
+            created_at: new Date(),
+        })
+
+        await RouteMap.findOrCreate({
+            where: { hash },
+            defaults: { route: parsed.route },
+        })
+
+        if (buffer.length >= batchSize) {
+            await NginxLog.bulkCreate(buffer, { ignoreDuplicates: true })
+            buffer.length = 0
         }
+
+        lineCount++
     }
 
     if (buffer.length) {
