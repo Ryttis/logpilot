@@ -1,0 +1,75 @@
+<body class="bg-gray-100 text-gray-900 min-h-screen flex items-center justify-center">
+<div x-data="auth()" class="bg-white p-8 rounded-2xl shadow-md w-96 space-y-4">
+    <h1 class="text-2xl font-bold text-center">Login / Register</h1>
+
+    <template x-if="!token">
+        <div class="space-y-3">
+            <input x-model="username" placeholder="Username" class="border p-2 w-full rounded" />
+            <input x-model="email" placeholder="Email" class="border p-2 w-full rounded" />
+            <input x-model="password" type="password" placeholder="Password" class="border p-2 w-full rounded" />
+            <div class="flex gap-2">
+                <button @click="register" class="bg-green-600 text-white px-3 py-2 rounded flex-1">Register</button>
+                <button @click="login" class="bg-blue-600 text-white px-3 py-2 rounded flex-1">Login</button>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="token">
+        <div class="text-center space-y-3">
+            <p class="text-green-700 font-semibold">Logged in as <span x-text="user?.email"></span></p>
+            <button @click="logout" class="bg-gray-600 text-white px-4 py-2 rounded">Logout</button>
+        </div>
+    </template>
+
+    <p x-text="status" class="text-sm text-center text-gray-600"></p>
+</div>
+
+<script type="module">
+    import Alpine from 'alpinejs'
+    window.Alpine = Alpine
+
+    Alpine.data('auth', () => ({
+        username: '', email: '', password: '', token: localStorage.getItem('jwt') || '',
+        user: null, status: '',
+        async register() {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: this.username, email: this.email, password: this.password })
+            })
+            const data = await res.json()
+            this.status = data.error ? data.error : 'Registered!'
+        },
+        async login() {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: this.email, password: this.password })
+            })
+            const data = await res.json()
+            if (data.token) {
+                this.token = data.token
+                localStorage.setItem('jwt', data.token)
+                this.status = 'Logged in!'
+                await this.me()
+            } else this.status = data.error || 'Login failed'
+        },
+        async me() {
+            if (!this.token) return
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
+                headers: { Authorization: `Bearer ${this.token}` }
+            })
+            const data = await res.json()
+            this.user = data.user
+        },
+        logout() {
+            this.token = ''
+            this.user = null
+            localStorage.removeItem('jwt')
+            this.status = 'Logged out'
+        }
+    }))
+
+    Alpine.start()
+</script>
+</body>
