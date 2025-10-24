@@ -5,21 +5,16 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "client": "npm run dev --prefix client",
-    "build:client": "npm run build --prefix client",
-    "build": "npm run build:client",
-    "dev": "nodemon src/server.js",
-    "migrate": "npx sequelize-cli db:migrate --migrations-path db/migrations",
-    "worker": "node src/workers/Scheduler.js",
-    "reset": "npx sequelize-cli db:migrate:undo:all --migrations-path db/migrations && npx sequelize-cli db:migrate --migrations-path db/migrations",
-    "test-db": "node scripts/test-db.js",
-    "up": "concurrently -n API,CLIENT,WORKER -c cyan,magenta,green \"npm run dev\" \"npm run client\" \"npm run worker\""
+    "start": "node --env-file .env src/server.js",
+    "dev": "nodemon --env-file .env src/server.js",
+    "worker": "node --env-file .env src/workers/Scheduler.js",
+    "migrate": "node --env-file .env ./node_modules/.bin/sequelize-cli db:migrate --migrations-path db/migrations",
+    "reset": "node --env-file .env ./node_modules/.bin/sequelize-cli db:migrate:undo:all --migrations-path db/migrations && node --env-file .env ./node_modules/.bin/sequelize-cli db:migrate --migrations-path db/migrations",
+    "up": "concurrently -n API,WORKER -c cyan,green \"npm run dev\" \"npm run worker\""
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
