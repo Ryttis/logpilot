@@ -1,89 +1,103 @@
-import db from '../../models/index.js'
-import { decodeLog } from '../services/LogEncodingService.js'
-
-const { NginxLog, Sequelize } = db
-const { Op } = Sequelize
+// src/controllers/LogController.js
+import db from '../../models/index.js';
+const { NginxLog, Sequelize } = db;
+const { Op } = Sequelize;
 
 /**
  * GET /api/logs
- * ?ip=1.2.3.4&route_hash=abc&page=1&limit=100
+ * Query parameters:
+ *   ?ip=1.2.3.4&route=home&method=GET&status=200&page=1&limit=100
  */
 export async function getLogs(req, res) {
     try {
-        const { ip, route_hash, page = 1, limit = 100 } = req.query
-        const where = {}
-        if (ip) where.ip = ip
-        if (route_hash) where.route_hash = route_hash
+        const {
+            ip,
+            route,
+            method,
+            status,
+            bytes_min,
+            bytes_max,
+            since,
+            until,
+            page = 1,
+            limit = 100,
+        } = req.query;
 
-        const offset = (page - 1) * limit
+        const where = {};
 
-        const logs = await NginxLog.findAll({
+        // Filters
+        if (ip) where.ip = ip;
+        if (route) where.route = { [Op.like]: `%${route}%` };
+        if (method) where.method = method.toUpperCase();
+        if (status) where.status = Number(status);
+        if (bytes_min || bytes_max) {
+            where.bytes = {};
+            if (bytes_min) where.bytes[Op.gte] = Number(bytes_min);
+            if (bytes_max) where.bytes[Op.lte] = Number(bytes_max);
+        }
+        if (since || until) {
+            where.created_at = {};
+            if (since) where.created_at[Op.gte] = new Date(since);
+            if (until) where.created_at[Op.lte] = new Date(until);
+        }
+
+        const offset = (Number(page) - 1) * Number(limit);
+
+        // Sort by IP asc, then route asc, then newest timestamp
+        const logs = await NginxLog.findAndCountAll({
             where,
-            order: [['created_at', 'DESC']],
-            limit: Number(limit),
-            offset: Number(offset)
-        })
-
-        const decoded = logs.map(log => decodeLog(log))
-        res.json({ count: decoded.length, data: decoded })
-    } catch (err) {
-        console.error(err)
-        res.status(500).json({ error: 'Failed to fetch logs' })
-    }
-}
-
-/**
- * GET /api/logs/stats
- * Aggregated hits by IP and route_hash
- */
-export async function getLogStats(req, res) {
-    try {
-        const stats = await NginxLog.findAll({
-            attributes: [
-                'ip',
-                'route_hash',
-                [Sequelize.fn('COUNT', Sequelize.col('id')), 'hits']
+            order: [
+                ['ip', 'ASC'],
+                ['route', 'ASC'],
+                ['created_at', 'DESC'],
             ],
-            group: ['ip', 'route_hash'],
-            order: [[Sequelize.literal('hits'), 'DESC']],
-            limit: 100
-        })
+            limit: Number(limit),
+            offset,
+            attributes: ['ip', 'route', 'method', 'status', 'bytes', 'created_at'],
+        });
 
-        const routeMap = await db.RouteMap.findAll()
-        const routeDict = Object.fromEntries(routeMap.map(r => [r.hash, r.route]))
-
-        const readable = stats.map(s => ({
-            ip: s.ip,
-            route: routeDict[s.route_hash] || `[${s.route_hash.slice(0, 6)}…]`,
-            hits: s.dataValues.hits
-        }))
-
-        res.json({ count: readable.length, data: readable })
-
+        res.json({
+            page: Number(page),
+            limit: Number(limit),
+            total: logs.count,
+            data: logs.rows,
+        });
     } catch (err) {
-        console.error(err)
-        res.status(500).json({ error: 'Failed to fetch stats' })
+        console.error('❌ [API] getLogs failed:', err);
+        res.status(500).json({ error: 'Failed to fetch logs' });
     }
 }
 
 /**
  * GET /api/logs/:ip
- * Detailed logs for one IP
+ * Returns logs for a specific IP sorted by route asc.
  */
 export async function getLogsByIp(req, res) {
     try {
-        const { ip } = req.params
+        const { ip } = req.params;
+        const { limit = 500 } = req.query;
+
+        if (!ip) return res.status(400).json({ error: 'IP is required' });
+
         const logs = await NginxLog.findAll({
             where: { ip },
-            order: [['created_at', 'DESC']],
-            limit: 500
-        })
-        const decoded = logs.map(log => decodeLog(log))
-        res.json({ ip, count: decoded.length, data: decoded })
+            order: [
+                ['route', 'ASC'],
+                ['created_at', 'DESC'],
+            ],
+            limit: Number(limit),
+            attributes: ['ip', 'route', 'method', 'status', 'bytes', 'created_at'],
+        });
+
+        res.json({
+            ip,
+            count: logs.length,
+            data: logs,
+        });
     } catch (err) {
-        console.error(err)
-        res.status(500).json({ error: 'Failed to fetch logs for IP' })
+        console.error('❌ [API] getLogsByIp failed:', err);
+        res.status(500).json({ error: 'Failed to fetch logs for IP' });
     }
 }
 
-export default { getLogs, getLogStats, getLogsByIp }
+export default { getLogs, getLogsByIp };

@@ -4,7 +4,7 @@ export default (sequelize, DataTypes) => {
         'NginxLog',
         {
             id: {
-                type: DataTypes.INTEGER.UNSIGNED,
+                type: DataTypes.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
             },
@@ -12,11 +12,7 @@ export default (sequelize, DataTypes) => {
                 type: DataTypes.STRING(45),
                 allowNull: false,
             },
-            route_hash: {
-                type: DataTypes.STRING(64),
-                allowNull: false,
-            },
-            data: {
+            route: {
                 type: DataTypes.TEXT('long'),
                 allowNull: false,
             },
@@ -25,7 +21,7 @@ export default (sequelize, DataTypes) => {
                 allowNull: false,
             },
             status: {
-                type: DataTypes.INTEGER,
+                type: DataTypes.SMALLINT,
                 allowNull: false,
             },
             bytes: {
@@ -34,19 +30,14 @@ export default (sequelize, DataTypes) => {
             },
             created_at: {
                 type: DataTypes.DATE,
-                allowNull: false,
                 defaultValue: DataTypes.NOW,
             },
         },
         {
             tableName: 'nginx_logs',
             timestamps: false,
-            indexes: [
-                { fields: ['route_hash'] },
-                { fields: ['created_at'] },
-            ],
         }
-    )
+    );
 
-    return NginxLog
-}
+    return NginxLog;
+};

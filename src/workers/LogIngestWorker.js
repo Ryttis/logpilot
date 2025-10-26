@@ -5,11 +5,9 @@ import { fileURLToPath } from 'url'
 import { parseLogFile } from '../services/LogParserService.js'
 import db from '../../models/index.js'
 
-// Resolve current directory
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Always load from env or default
 const LOG_DIR = process.env.LOG_DIR || path.resolve(__dirname, '../../logs')
 const STATE_FILE = path.join(LOG_DIR, '.processed.json')
 

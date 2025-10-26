@@ -11,7 +11,7 @@ export async function up(queryInterface, Sequelize) {
             type: Sequelize.STRING(45),
             allowNull: false,
         },
-        route_hash: {
+        route: {
             type: Sequelize.STRING(64),
             allowNull: false,
         },
@@ -38,7 +38,7 @@ export async function up(queryInterface, Sequelize) {
     })
 
     await queryInterface.addIndex('nginx_logs', ['ip'])
-    await queryInterface.addIndex('nginx_logs', ['route_hash'])
+    await queryInterface.addIndex('nginx_logs', ['route'])
     await queryInterface.addIndex('nginx_logs', ['status'])
 }
 

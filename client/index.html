@@ -4,18 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LogPilot Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="/src/main.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
 <div class="container mx-auto py-8 px-4" x-data="logDashboard" x-init="loadStats()">
+
     <!-- Table -->
     <div class="bg-white p-6 rounded-2xl shadow">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-700">Top IPs / Routes / Hits</h2>
-            <button @click="loadStats()" class="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl hover:bg-blue-700">
-                🔄 Refresh
-            </button>
-        </div>
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm border-collapse">
@@ -23,15 +19,19 @@
                 <tr>
                     <th class="py-2 px-3 text-left">IP</th>
                     <th class="py-2 px-3 text-left">Route</th>
-                    <th class="py-2 px-3 text-right">Hits</th>
+                    <th class="py-2 px-3 text-right">Method</th>
+                    <th class="py-2 px-3 text-right">Status</th>
+                    <th class="py-2 px-3 text-right">Bytes</th>
                 </tr>
                 </thead>
                 <tbody>
-                <template x-for="row in stats" :key="row.ip + row.route">
-                    <tr class="border-b hover:bg-gray-50 transition">
+                <template x-for="(row, index) in stats" :key="row.ip + row.route + '-' + index">
+                <tr class="border-b hover:bg-gray-50 transition">
                         <td class="py-2 px-3 font-medium text-gray-800" x-text="row.ip"></td>
                         <td class="py-2 px-3 text-gray-600" x-text="row.route"></td>
-                        <td class="py-2 px-3 text-right font-semibold text-blue-600" x-text="row.hits"></td>
+                        <td class="py-2 px-3 text-right font-semibold text-blue-600" x-text="row.method"></td>
+                        <td class="py-2 px-3 text-right font-semibold text-blue-600" x-text="row.status"></td>
+                        <td class="py-2 px-3 text-right font-semibold text-blue-600" x-text="row.bytes"></td>
                     </tr>
                 </template>
                 </tbody>

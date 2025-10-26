@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "client": "npm run dev --prefix client",
     "build": "vite build",
     "preview": "vite preview"
   },
