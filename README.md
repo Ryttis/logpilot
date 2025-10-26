@@ -48,7 +48,7 @@ cp .env.example .env
 npm install
 npm run migrate
 ```
-please adjust .env according local environment
+please adjust .env and config/config.json according local environment
 ## 🧩 Project Launching
 - Backend
 ```
